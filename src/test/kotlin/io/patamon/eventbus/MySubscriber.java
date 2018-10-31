@@ -12,11 +12,13 @@ import com.google.common.eventbus.Subscribe;
 public class MySubscriber extends MySubscriberS {
 
     @Subscribe
+    @io.patamon.eventbus.Subscribe
     public void event01(Event event) {
         System.out.println("执行了 event01");
     }
 
     @Subscribe
+    @io.patamon.eventbus.Subscribe
     public void event02(Event event) {
         System.out.println("执行了 event02");
     }
@@ -26,6 +28,7 @@ public class MySubscriber extends MySubscriberS {
 class MySubscriberS {
 
     @Subscribe
+    @io.patamon.eventbus.Subscribe
     public void event01(Event event) {
         System.out.println("执行了 MySubscriberS event01");
     }

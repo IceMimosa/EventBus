@@ -1,5 +1,7 @@
 package io.patamon.eventbus
 
+import java.lang.reflect.Method
+
 /**
  * Desc:
  *
@@ -7,6 +9,13 @@ package io.patamon.eventbus
  * Created by IceMimosa
  * Date: 2018/10/27
  */
-class Subscriber {
+data class Subscriber(
+        private val target: Any,
+        private val method: Method
+) {
+
+    fun invoke(vararg args: Any) {
+        this.method.invoke(this.target, *args)
+    }
 
 }

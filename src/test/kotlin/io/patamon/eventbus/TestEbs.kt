@@ -9,5 +9,9 @@ package io.patamon.eventbus
  */
 fun main(args: Array<String>) {
     val bus = EventBus()
-    bus.regist(MySubscriber())
+    val s = MySubscriber()
+    bus.regist(s)
+
+
+    bus.post(Event())
 }
