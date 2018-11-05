@@ -1,9 +1,9 @@
-package io.patamon.eventbus
+package io.patamon.eventbus.core
 
 import java.lang.reflect.Method
 
 /**
- * Desc:
+ * Desc: A @[Subscribe] method class
  *
  * Mail: chk19940609@gmail.com
  * Created by IceMimosa

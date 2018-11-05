@@ -1,8 +1,10 @@
-package io.patamon.eventbus
+package io.patamon.eventbus.core
 
 import kotlin.reflect.KClass
 
-
+/**
+ * get all super classes
+ */
 fun KClass<*>?.flattenHierarchy(): Set<KClass<*>> {
     this ?: emptySet<KClass<*>>()
     val types = mutableSetOf<KClass<*>>()

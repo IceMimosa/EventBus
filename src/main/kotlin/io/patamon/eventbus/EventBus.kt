@@ -1,11 +1,14 @@
 package io.patamon.eventbus
 
+import io.patamon.eventbus.core.Subscribe
+import io.patamon.eventbus.core.Subscriber
+import io.patamon.eventbus.core.flattenHierarchy
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 /**
- * Desc:
+ * Desc: event bus core
  *
  * Mail: chk19940609@gmail.com
  * Created by IceMimosa
