@@ -19,7 +19,6 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
-import javax.tools.Diagnostic;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,28 +44,24 @@ public class EventBusProcessor extends AbstractProcessor {
      */
     private TreeMaker treeMaker;
 
-    private JavacElements javacElements;
-
     /**
-     * 命名工具类
+     * 帮助类
      */
-    private Names names;
-    private Messager messager;
+    private MakerHelper makerHelper;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        this.messager = processingEnv.getMessager();
+        Messager messager = processingEnv.getMessager();
         this.trees = Trees.instance(processingEnv);
         Context context = ((JavacProcessingEnvironment) processingEnv).getContext();
         this.treeMaker = TreeMaker.instance(context);
-        this.javacElements = JavacElements.instance(context);
-        this.names = Names.instance(context);
+        JavacElements javacElements = JavacElements.instance(context);
+        Names names = Names.instance(context);
+
+        this.makerHelper = new MakerHelper(treeMaker, names, javacElements, messager);
     }
 
-    /**
-     *
-     */
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (!roundEnv.processingOver()) {
@@ -75,17 +70,16 @@ public class EventBusProcessor extends AbstractProcessor {
                     // 获取语法树
                     JCTree tree = (JCTree) trees.getTree(element);
                     // 使用TreeTranslator遍历
-                    EventBusTranslator translator = new EventBusTranslator(treeMaker, names, messager, javacElements);;
+                    EventBusTranslator translator = new EventBusTranslator(treeMaker, makerHelper);
                     tree.accept(translator);
 
+                    // 增加 import 语句
                     if (!translator.methods.isEmpty()) {
                         TreePath path = trees.getPath(element);
                         JCTree.JCCompilationUnit compilationUnit = ((JCTree.JCCompilationUnit) path.getCompilationUnit());
                         List<String> collect = compilationUnit.defs.stream().filter(it -> it instanceof JCTree.JCImport).map(JCTree::toString).collect(Collectors.toList());
-                        if (!collect.contains("import io.patamon.eventbus.core.EventBusHandler;")) {
-                            compilationUnit.defs = compilationUnit.defs.prepend(treeMaker.Import(
-                                    treeMaker.Select(treeMaker.Ident(names.fromString(javacElements.getTypeElement(EventBusHandler.class.getName()).owner.toString())), names.fromString(EventBusHandler.class.getSimpleName())),
-                                    false));
+                        if (!collect.contains("import " + EventBusHandler.class.getName() + ";")) {
+                            compilationUnit.defs = compilationUnit.defs.prepend(makerHelper.makeImport(EventBusHandler.class, false));
                         }
                     }
                 }
@@ -94,14 +88,6 @@ public class EventBusProcessor extends AbstractProcessor {
         return false;
     }
 
-    /**
-     * If the processor class is annotated with {@link
-     * SupportedSourceVersion}, return the source version in the
-     * annotation.  If the class is not so annotated, {@link
-     * SourceVersion#RELEASE_6} is returned.
-     *
-     * @return the latest source version supported by this processor
-     */
     @Override
     public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latestSupported();

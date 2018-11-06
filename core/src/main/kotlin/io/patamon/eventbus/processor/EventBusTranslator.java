@@ -1,20 +1,14 @@
 package io.patamon.eventbus.processor;
 
-import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.Flags;
-import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.model.JavacElements;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.util.List;
-import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Pair;
 import io.patamon.eventbus.core.EventBusHandler;
 import io.patamon.eventbus.core.Subscribe;
-
-import javax.annotation.processing.Messager;
 
 /**
  * Desc: AST 处理
@@ -26,17 +20,18 @@ import javax.annotation.processing.Messager;
 public class EventBusTranslator extends TreeTranslator {
 
     private TreeMaker treeMaker;
-    private Messager messager;
-    private JavacElements javacElements;
-    private Names names;
+    private MakerHelper makerHelper;
 
+    /**
+     * 存放要调用的方法信息
+     *
+     * 方法名 -> 参数类型全名
+     */
     List<Pair<String, String>> methods = List.nil();
 
-    public EventBusTranslator(TreeMaker treeMaker, Names names, Messager messager, JavacElements javacElements) {
+    public EventBusTranslator(TreeMaker treeMaker, MakerHelper makerHelper) {
         this.treeMaker = treeMaker;
-        this.messager = messager;
-        this.javacElements = javacElements;
-        this.names = names;
+        this.makerHelper = makerHelper;
     }
 
     /**
@@ -52,11 +47,11 @@ public class EventBusTranslator extends TreeTranslator {
             }
         }
         if (!methods.isEmpty()) {
-            jcClassDecl.implementing = jcClassDecl.implementing.append(treeMaker.Ident(javacElements.getTypeElement(EventBusHandler.class.getName())));
+            jcClassDecl.implementing = jcClassDecl.implementing.append(makerHelper.makeInterface(EventBusHandler.class));
             // 2. 实现类的方法
             jcClassDecl.defs = jcClassDecl.defs.append(createInvokeMethod());
             this.result = jcClassDecl;
-            System.out.println(jcClassDecl);
+            // makerHelper.logInfo(jcClassDecl.toString());
         }
     }
 
@@ -94,17 +89,17 @@ public class EventBusTranslator extends TreeTranslator {
     private JCTree.JCMethodDecl createInvokeMethod() {
         // 构建方法参数
         JCTree.JCVariableDecl param1 = treeMaker.VarDef(
-                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("type"), treeMaker.Ident(makeSymbol(String.class)), null
+                treeMaker.Modifiers(Flags.PARAMETER), makerHelper.makeName("type"), treeMaker.Ident(makerHelper.makeSymbol(String.class)), null
         );
         JCTree.JCVariableDecl param2 = treeMaker.VarDef(
-                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("arg"), treeMaker.Ident(makeSymbol(Object.class)), null
+                treeMaker.Modifiers(Flags.PARAMETER), makerHelper.makeName("arg"), treeMaker.Ident(makerHelper.makeSymbol(Object.class)), null
         );
 
         JCTree.JCMethodDecl method = treeMaker.MethodDef(
                 // public方法
                 treeMaker.Modifiers(Flags.PUBLIC),
                 // 方法名称
-                names.fromString("$$__invoke__$$"),
+                makerHelper.makeName("$$__invoke__$$"),
                 // 方法返回的类型, void
                 treeMaker.Type(new Type.JCVoidType()),
                 // 泛型参数
@@ -118,32 +113,36 @@ public class EventBusTranslator extends TreeTranslator {
                 // 默认值
                 null
         );
-        method.getModifiers().annotations = method.getModifiers().annotations.append(treeMaker.Annotation(new Attribute.Compound(javacElements.getTypeElement(Override.class.getName()).type, List.nil())));
+        // 增加 Override 注解
+        method.getModifiers().annotations = method.getModifiers().annotations.append(
+                makerHelper.makeAnnotation(Override.class)
+        );
         return method;
     }
 
+    /**
+     * 创建执行方法体
+     */
     private JCTree.JCBlock createInvokeMethodBody() {
         List<JCTree.JCStatement> iFs = List.nil();
         for (Pair<String, String> method: methods) {
             String type = method.fst + "@" + method.snd;
-            JCTree.JCMethodInvocation iF = treeMaker.Apply(List.nil(), treeMaker.Select(treeMaker.Literal(type), names.fromString("equals")), List.of(treeMaker.Ident(names.fromString("type"))));
+            // if 语句 ->  if ("方法名@参数全名".equals(type))
+            JCTree.JCMethodInvocation iF = treeMaker.Apply(
+                    List.nil(),
+                    treeMaker.Select(treeMaker.Literal(type), makerHelper.makeName("equals")),
+                    List.of(treeMaker.Ident(makerHelper.makeName("type")))
+            );
+            // 执行语句 -> this.method((arg_type) arg)
             JCTree.JCStatement call = treeMaker.Exec(
                     treeMaker.Apply(
                             List.nil(),
-                            treeMaker.Select(treeMaker.Ident(names.fromString("this")), names.fromString(method.fst)),
-                            List.of(treeMaker.TypeCast(makeSymbol(method.snd).type, treeMaker.Ident(names.fromString("arg"))))
+                            treeMaker.Select(treeMaker.Ident(makerHelper.makeName("this")), makerHelper.makeName(method.fst)),
+                            List.of(treeMaker.TypeCast(makerHelper.makeSymbol(method.snd).type, treeMaker.Ident(makerHelper.makeName("arg"))))
                     )
             );
             iFs = iFs.append(treeMaker.If(iF, call, null));
         }
         return treeMaker.Block(0L, iFs);
-    }
-
-    private Symbol.ClassSymbol makeSymbol(Class t) {
-        return javacElements.getTypeElement(t.getName());
-    }
-
-    private Symbol.ClassSymbol makeSymbol(String t) {
-        return javacElements.getTypeElement(t);
     }
 }

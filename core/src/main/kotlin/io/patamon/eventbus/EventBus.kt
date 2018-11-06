@@ -16,12 +16,22 @@ import java.util.concurrent.Executors
  */
 class EventBus(
         private val executor: Executor = Executors.newWorkStealingPool(),
+        /**
+         * 是否使用原生的方法调用, 非反射
+         */
         private val nativeInvoke: Boolean = true
 ) {
 
+    /**
+     * 存放调用关系: `方法参数类型` -> 调用类集合
+     */
     private val subscribers = ConcurrentHashMap<Class<*>, MutableSet<Subscriber>>()
 
+    /**
+     * 注册类中的所有方法
+     */
     fun regist(obj: Any) {
+        // 找出所有的父类, TODO: 处理子类和父类重复的方法
         obj::class.flattenHierarchy().forEach { type ->
             type.java.declaredMethods
                     .filter { it.isAnnotationPresent(Subscribe::class.java) }
@@ -35,6 +45,9 @@ class EventBus(
         }
     }
 
+    /**
+     * 发布事件
+     */
     fun post(event: Any) {
         this.subscribers[event.javaClass]?.forEach {
             executor.execute {
