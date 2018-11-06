@@ -14,7 +14,12 @@ public class Tests2 {
 
     @Subscribe
     public void handle(Event e) {
-        System.out.println("执行了 handle e");
+        System.out.println("执行了 handle");
+    }
+
+    @Subscribe
+    public void handle2(Event e) {
+        System.out.println("执行了 handle2");
     }
 
 

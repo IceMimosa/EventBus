@@ -15,7 +15,8 @@ import java.util.concurrent.Executors
  * Date: 2018/10/27
  */
 class EventBus(
-        private val executor: Executor = Executors.newWorkStealingPool()
+        private val executor: Executor = Executors.newWorkStealingPool(),
+        private val nativeInvoke: Boolean = true
 ) {
 
     private val subscribers = ConcurrentHashMap<Class<*>, MutableSet<Subscriber>>()
@@ -37,8 +38,11 @@ class EventBus(
     fun post(event: Any) {
         this.subscribers[event.javaClass]?.forEach {
             executor.execute {
-                // it.invoke(event)
-                it.invokeNative(event)
+                if (nativeInvoke) {
+                    it.invokeNative(event)
+                } else {
+                    it.invoke(event)
+                }
             }
         }
     }
