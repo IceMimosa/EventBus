@@ -18,4 +18,8 @@ data class Subscriber(
         this.method.invoke(this.target, *args)
     }
 
+    fun invokeNative(vararg args: Any) {
+        val type = "${method.name}@${args.first().javaClass.typeName}"
+        (this.target as EventBusHandler).`$$__invoke__$$`(type, args.first())
+    }
 }

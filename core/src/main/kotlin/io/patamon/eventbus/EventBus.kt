@@ -37,7 +37,8 @@ class EventBus(
     fun post(event: Any) {
         this.subscribers[event.javaClass]?.forEach {
             executor.execute {
-                it.invoke(event)
+                // it.invoke(event)
+                it.invokeNative(event)
             }
         }
     }

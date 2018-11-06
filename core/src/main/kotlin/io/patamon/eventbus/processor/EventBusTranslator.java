@@ -2,6 +2,7 @@ package io.patamon.eventbus.processor;
 
 import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.Flags;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.model.JavacElements;
 import com.sun.tools.javac.tree.JCTree;
@@ -13,6 +14,8 @@ import com.sun.tools.javac.util.Pair;
 import io.patamon.eventbus.core.EventBusHandler;
 import io.patamon.eventbus.core.Subscribe;
 
+import javax.annotation.processing.Messager;
+
 /**
  * Desc: AST 处理
  *
@@ -23,13 +26,15 @@ import io.patamon.eventbus.core.Subscribe;
 public class EventBusTranslator extends TreeTranslator {
 
     private TreeMaker treeMaker;
+    private Messager messager;
     private JavacElements javacElements;
     private Names names;
 
-    private List<Pair<String, String>> methods = List.nil();
+    List<Pair<String, String>> methods = List.nil();
 
-    public EventBusTranslator(TreeMaker treeMaker, Names names, JavacElements javacElements) {
+    public EventBusTranslator(TreeMaker treeMaker, Names names, Messager messager, JavacElements javacElements) {
         this.treeMaker = treeMaker;
+        this.messager = messager;
         this.javacElements = javacElements;
         this.names = names;
     }
@@ -89,10 +94,10 @@ public class EventBusTranslator extends TreeTranslator {
     private JCTree.JCMethodDecl createInvokeMethod() {
         // 构建方法参数
         JCTree.JCVariableDecl param1 = treeMaker.VarDef(
-                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("methodName"), treeMaker.Ident(javacElements.getTypeElement(String.class.getName())), null
+                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("type"), treeMaker.Ident(makeSymbol(String.class)), null
         );
         JCTree.JCVariableDecl param2 = treeMaker.VarDef(
-                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("arg"), treeMaker.Ident(javacElements.getTypeElement(Object.class.getName())), null
+                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("arg"), treeMaker.Ident(makeSymbol(Object.class)), null
         );
 
         JCTree.JCMethodDecl method = treeMaker.MethodDef(
@@ -109,11 +114,36 @@ public class EventBusTranslator extends TreeTranslator {
                 // throw表达式
                 List.nil(),
                 // 方法体
-                treeMaker.Block(0L, List.nil()),
+                createInvokeMethodBody(),
                 // 默认值
                 null
         );
         method.getModifiers().annotations = method.getModifiers().annotations.append(treeMaker.Annotation(new Attribute.Compound(javacElements.getTypeElement(Override.class.getName()).type, List.nil())));
         return method;
+    }
+
+    private JCTree.JCBlock createInvokeMethodBody() {
+        List<JCTree.JCStatement> iFs = List.nil();
+        for (Pair<String, String> method: methods) {
+            String type = method.fst + "@" + method.snd;
+            JCTree.JCMethodInvocation iF = treeMaker.Apply(List.nil(), treeMaker.Select(treeMaker.Literal(type), names.fromString("equals")), List.of(treeMaker.Ident(names.fromString("type"))));
+            JCTree.JCStatement call = treeMaker.Exec(
+                    treeMaker.Apply(
+                            List.nil(),
+                            treeMaker.Select(treeMaker.Ident(names.fromString("this")), names.fromString(method.fst)),
+                            List.of(treeMaker.TypeCast(makeSymbol(method.snd).type, treeMaker.Ident(names.fromString("arg"))))
+                    )
+            );
+            iFs = iFs.append(treeMaker.If(iF, call, null));
+        }
+        return treeMaker.Block(0L, iFs);
+    }
+
+    private Symbol.ClassSymbol makeSymbol(Class t) {
+        return javacElements.getTypeElement(t.getName());
+    }
+
+    private Symbol.ClassSymbol makeSymbol(String t) {
+        return javacElements.getTypeElement(t);
     }
 }

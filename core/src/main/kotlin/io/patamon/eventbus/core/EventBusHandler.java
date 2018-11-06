@@ -13,6 +13,6 @@ public interface EventBusHandler {
     /**
      * 方法处理
      */
-    void $$__invoke__$$(String methodName, Object arg);
+    void $$__invoke__$$(String type, Object arg);
 
 }

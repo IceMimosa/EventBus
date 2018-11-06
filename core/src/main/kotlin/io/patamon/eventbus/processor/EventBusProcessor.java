@@ -1,5 +1,6 @@
 package io.patamon.eventbus.processor;
 
+import com.sun.source.util.TreePath;
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.model.JavacElements;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
@@ -7,6 +8,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Names;
+import io.patamon.eventbus.core.EventBusHandler;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Messager;
@@ -17,7 +19,10 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Desc: EventBus 对 {@link io.patamon.eventbus.core.Subscribe} 注解处理
@@ -70,16 +75,19 @@ public class EventBusProcessor extends AbstractProcessor {
                     // 获取语法树
                     JCTree tree = (JCTree) trees.getTree(element);
                     // 使用TreeTranslator遍历
-                    tree.accept(new EventBusTranslator(treeMaker, names, javacElements));
+                    EventBusTranslator translator = new EventBusTranslator(treeMaker, names, messager, javacElements);;
+                    tree.accept(translator);
 
-//                    TreePath path = trees.getPath(element);
-//                    JCTree.JCCompilationUnit compilationUnit = ((JCTree.JCCompilationUnit) path.getCompilationUnit());
-//                    List<String> collect = compilationUnit.defs.stream().filter(it -> it instanceof JCTree.JCImport).map(JCTree::toString).collect(Collectors.toList());
-//                    if (!collect.contains("import io.patamon.eventbus.core.EventBusHandler;")) {
-//                        compilationUnit.defs = compilationUnit.defs.prepend(treeMaker.Import(
-//                                treeMaker.Select(treeMaker.Ident(names.fromString(javacElements.getTypeElement(EventBusHandler.class.getName()).owner.toString())), names.fromString(EventBusHandler.class.getSimpleName())),
-//                                false));
-//                    }
+                    if (!translator.methods.isEmpty()) {
+                        TreePath path = trees.getPath(element);
+                        JCTree.JCCompilationUnit compilationUnit = ((JCTree.JCCompilationUnit) path.getCompilationUnit());
+                        List<String> collect = compilationUnit.defs.stream().filter(it -> it instanceof JCTree.JCImport).map(JCTree::toString).collect(Collectors.toList());
+                        if (!collect.contains("import io.patamon.eventbus.core.EventBusHandler;")) {
+                            compilationUnit.defs = compilationUnit.defs.prepend(treeMaker.Import(
+                                    treeMaker.Select(treeMaker.Ident(names.fromString(javacElements.getTypeElement(EventBusHandler.class.getName()).owner.toString())), names.fromString(EventBusHandler.class.getSimpleName())),
+                                    false));
+                        }
+                    }
                 }
             }
         }
@@ -96,6 +104,6 @@ public class EventBusProcessor extends AbstractProcessor {
      */
     @Override
     public SourceVersion getSupportedSourceVersion() {
-        return super.getSupportedSourceVersion();
+        return SourceVersion.latestSupported();
     }
 }

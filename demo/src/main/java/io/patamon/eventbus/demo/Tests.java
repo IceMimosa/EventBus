@@ -1,8 +1,5 @@
 package io.patamon.eventbus.demo;
 
-import io.patamon.eventbus.core.EventBusHandler;
-import io.patamon.eventbus.core.Subscribe;
-
 import java.io.Serializable;
 
 /**
@@ -14,19 +11,10 @@ import java.io.Serializable;
  */
 public class Tests implements Serializable {
 
-    public String ss;
-
-    @Subscribe
-    public void a(String s) {
-
-    }
-
     public static void main(String[] args) throws Exception {
         com.sun.tools.javac.Main.main(new String[] {"-proc:only",
                 "-processor", "io.patamon.eventbus.processor.EventBusProcessor",
-                "/Users/icemimosa/Documents/github/AskMisa/EventBus/demo/src/main/kotlin/io/patamon/eventbus/demo/Tests.java"});
-        System.out.println(EventBusHandler.class);
+                "/Users/icemimosa/Documents/github/AskMisa/EventBus/demo/src/main/java/io/patamon/eventbus/demo/Tests.java"});
     }
-
 
 }
