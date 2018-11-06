@@ -1,8 +1,6 @@
-package io.patamon.eventbus;
+package io.patamon.eventbus.demo;
 
 // import com.google.common.eventbus.Subscribe;
-
-import io.patamon.eventbus.core.Subscribe;
 
 /**
  * Desc:
@@ -14,13 +12,14 @@ import io.patamon.eventbus.core.Subscribe;
 public class MySubscriber extends MySubscriberS {
 
     // @Subscribe
-    @Subscribe
+    // @Subscribea
+    @Override
     public void event01(Event event) {
         System.out.println("执行了 event01");
     }
 
     // @Subscribe
-    @Subscribe
+    // @Subscribe
     public void event02(Event event) {
         System.out.println("执行了 event02");
     }
@@ -30,7 +29,7 @@ public class MySubscriber extends MySubscriberS {
 class MySubscriberS {
 
     // @Subscribe
-    @Subscribe
+    // @Subscribe
     public void event01(Event event) {
         System.out.println("执行了 MySubscriberS event01");
     }

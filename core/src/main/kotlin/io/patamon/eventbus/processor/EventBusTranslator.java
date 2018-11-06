@@ -46,11 +46,13 @@ public class EventBusTranslator extends TreeTranslator {
                 return;
             }
         }
-        jcClassDecl.implementing = jcClassDecl.implementing.append(treeMaker.Ident(javacElements.getTypeElement(EventBusHandler.class.getName())));
-        // 2. 实现类的方法
-        jcClassDecl.defs = jcClassDecl.defs.append(createInvokeMethod());
-        this.result = jcClassDecl;
-        System.out.println(jcClassDecl);
+        if (!methods.isEmpty()) {
+            jcClassDecl.implementing = jcClassDecl.implementing.append(treeMaker.Ident(javacElements.getTypeElement(EventBusHandler.class.getName())));
+            // 2. 实现类的方法
+            jcClassDecl.defs = jcClassDecl.defs.append(createInvokeMethod());
+            this.result = jcClassDecl;
+            System.out.println(jcClassDecl);
+        }
     }
 
     /**
@@ -76,16 +78,21 @@ public class EventBusTranslator extends TreeTranslator {
         }
     }
 
+    @Override
+    public void visitVarDef(JCTree.JCVariableDecl jcVariableDecl) {
+        super.visitVarDef(jcVariableDecl);
+    }
+
     /**
      * 创建 EventBusHandler 的方法
      */
     private JCTree.JCMethodDecl createInvokeMethod() {
         // 构建方法参数
         JCTree.JCVariableDecl param1 = treeMaker.VarDef(
-                treeMaker.Modifiers(Flags.PARAMETER), javacElements.getName("methodName"), treeMaker.Ident(javacElements.getTypeElement(String.class.getName())), null
+                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("methodName"), treeMaker.Ident(javacElements.getTypeElement(String.class.getName())), null
         );
         JCTree.JCVariableDecl param2 = treeMaker.VarDef(
-                treeMaker.Modifiers(Flags.PARAMETER), javacElements.getName("arg"), treeMaker.Ident(javacElements.getTypeElement(Object.class.getName())), null
+                treeMaker.Modifiers(Flags.PARAMETER), names.fromString("arg"), treeMaker.Ident(javacElements.getTypeElement(Object.class.getName())), null
         );
 
         JCTree.JCMethodDecl method = treeMaker.MethodDef(

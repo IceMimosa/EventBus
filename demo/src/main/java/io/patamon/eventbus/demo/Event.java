@@ -1,4 +1,4 @@
-package io.patamon.eventbus;
+package io.patamon.eventbus.demo;
 
 /**
  * Desc:

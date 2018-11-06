@@ -26,7 +26,7 @@ import java.util.Set;
  * Created by IceMimosa
  * Date: 2018/11/5
  */
-@SupportedAnnotationTypes({"io.patamon.eventbus.core.*"})
+@SupportedAnnotationTypes({"io.patamon.eventbus.core.Subscribe"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class EventBusProcessor extends AbstractProcessor {
 
@@ -71,6 +71,15 @@ public class EventBusProcessor extends AbstractProcessor {
                     JCTree tree = (JCTree) trees.getTree(element);
                     // 使用TreeTranslator遍历
                     tree.accept(new EventBusTranslator(treeMaker, names, javacElements));
+
+//                    TreePath path = trees.getPath(element);
+//                    JCTree.JCCompilationUnit compilationUnit = ((JCTree.JCCompilationUnit) path.getCompilationUnit());
+//                    List<String> collect = compilationUnit.defs.stream().filter(it -> it instanceof JCTree.JCImport).map(JCTree::toString).collect(Collectors.toList());
+//                    if (!collect.contains("import io.patamon.eventbus.core.EventBusHandler;")) {
+//                        compilationUnit.defs = compilationUnit.defs.prepend(treeMaker.Import(
+//                                treeMaker.Select(treeMaker.Ident(names.fromString(javacElements.getTypeElement(EventBusHandler.class.getName()).owner.toString())), names.fromString(EventBusHandler.class.getSimpleName())),
+//                                false));
+//                    }
                 }
             }
         }
